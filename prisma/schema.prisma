@@ -1,0 +1,77 @@
+// -----------------------------------------------
+// PRISMA SCHEMA - Sistema de Patrimônio de Bens da Paróquia
+// Autor: Douglas Santos – DAST Technologies
+// Data: 12/11/2025
+// -----------------------------------------------
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Usuario {
+  id_user     Int       @id @default(autoincrement())
+  nome        String
+  email       String     @unique
+  senha       String
+  tipo_user   TipoUser   @default(COMUM)
+  retiradas   RetiradaEmprestimo[] @relation("RetiranteRelation")
+  recebimentos RetiradaEmprestimo[] @relation("RecebedorRelation")
+}
+
+model Bem {
+  id_bem      Int        @id @default(autoincrement())
+  nome_bem    String
+  estado      EstadoBem  @default(USADO)
+  foto        String?
+  valor       Decimal?   @db.Decimal(10, 2)
+  codigo      String     @unique
+  emprestimos RetiradaEmprestimo[]
+}
+
+model Pastoral {
+  id_pastoral       Int        @id @default(autoincrement())
+  nome_pastoral     String
+  coordenador       String
+  vice_coordenador  String?
+  emprestimos       RetiradaEmprestimo[]
+}
+
+model RetiradaEmprestimo {
+  id                Int        @id @default(autoincrement())
+  id_bem            Int
+  id_retirante      Int
+  id_recebedor      Int?
+  id_pastoral       Int
+  data_retirada     DateTime
+  data_entrega      DateTime?
+  estado_retirada   EstadoBem
+  estado_devolucao  EstadoBem?
+  descricao_motivo_retirada String?
+  email_retirante   String
+
+  // Relacionamentos
+  bem         Bem        @relation(fields: [id_bem], references: [id_bem])
+  pastoral    Pastoral   @relation(fields: [id_pastoral], references: [id_pastoral])
+  retirante   Usuario    @relation("RetiranteRelation", fields: [id_retirante], references: [id_user])
+  recebedor   Usuario?   @relation("RecebedorRelation", fields: [id_recebedor], references: [id_user])
+}
+
+// -----------------------------------------------
+// ENUMS
+// -----------------------------------------------
+
+enum TipoUser {
+  ADM
+  COMUM
+}
+
+enum EstadoBem {
+  NOVO
+  USADO
+  QUEBRADO
+}
