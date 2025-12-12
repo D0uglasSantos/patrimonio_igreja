@@ -171,7 +171,7 @@ export async function DELETE(
     }
 
     // Verificar se há empréstimos ativos
-    const emprestimosAtivos = bemExistente.emprestimos.filter(emp => !emp.data_entrega)
+    const emprestimosAtivos = bemExistente.emprestimos.filter((emp: { data_entrega: Date | null }) => !emp.data_entrega)
     if (emprestimosAtivos.length > 0) {
       return NextResponse.json({ error: 'Não é possível deletar um bem com empréstimos ativos' }, { status: 400 })
     }
