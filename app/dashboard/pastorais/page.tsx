@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,15 +14,24 @@ import { toast } from 'sonner'
 import { Church } from 'lucide-react'
 
 export default function PastoraisPage() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [pastorais, setPastorais] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     nome_pastoral: '',
-    coordenador: '',
-    vice_coordenador: '',
   })
+
+  const isAdmin = session?.user?.tipo_user === 'ADM'
+
+  useEffect(() => {
+    if (status === 'loading') return
+    if (status === 'unauthenticated') {
+      router.replace('/login')
+    }
+  }, [session, status, router])
 
   const fetchPastorais = async () => {
     try {
@@ -30,7 +41,13 @@ export default function PastoraisPage() {
         throw new Error('Erro ao carregar pastorais')
       }
       const data = await response.json()
-      setPastorais(data)
+      // Contar membros para cada pastoral
+      const pastoraisComMembros = data.map((p: any) => ({
+        ...p,
+        coordenadores: p.membros?.filter((m: any) => m.funcao_pastoral === 'COORDENADOR').length || 0,
+        vices: p.membros?.filter((m: any) => m.funcao_pastoral === 'VICE_COORDENADOR').length || 0,
+      }))
+      setPastorais(pastoraisComMembros)
     } catch (error) {
       toast.error('Erro ao carregar pastorais')
     } finally {
@@ -47,17 +64,12 @@ export default function PastoraisPage() {
     setIsSaving(true)
 
     try {
-      const payload = {
-        ...formData,
-        vice_coordenador: formData.vice_coordenador || null,
-      }
-
       const response = await fetch('/api/pastorais', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       })
 
       if (!response.ok) {
@@ -67,11 +79,7 @@ export default function PastoraisPage() {
 
       toast.success('Pastoral cadastrada com sucesso!')
       setIsDialogOpen(false)
-      setFormData({
-        nome_pastoral: '',
-        coordenador: '',
-        vice_coordenador: '',
-      })
+      setFormData({ nome_pastoral: '' })
       fetchPastorais()
     } catch (error: any) {
       toast.error('Erro ao cadastrar pastoral', {
@@ -95,72 +103,51 @@ export default function PastoraisPage() {
             </p>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Church className="h-4 w-4 mr-2" />
-                Nova Pastoral
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Cadastrar Nova Pastoral</DialogTitle>
-                <DialogDescription>
-                  Preencha os dados da nova pastoral
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome_pastoral">Nome da Pastoral *</Label>
-                  <Input
-                    id="nome_pastoral"
-                    placeholder="Ex: Pastoral da Juventude"
-                    value={formData.nome_pastoral}
-                    onChange={(e) => setFormData({ ...formData, nome_pastoral: e.target.value })}
-                    required
-                    disabled={isSaving}
-                  />
-                </div>
+          {isAdmin && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Church className="h-4 w-4 mr-2" />
+                  Nova Pastoral
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cadastrar Nova Pastoral</DialogTitle>
+                  <DialogDescription>
+                    Preencha o nome da nova pastoral
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome_pastoral">Nome da Pastoral *</Label>
+                    <Input
+                      id="nome_pastoral"
+                      placeholder="Ex: Pastoral da Juventude"
+                      value={formData.nome_pastoral}
+                      onChange={(e) => setFormData({ ...formData, nome_pastoral: e.target.value })}
+                      required
+                      disabled={isSaving}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="coordenador">Coordenador *</Label>
-                  <Input
-                    id="coordenador"
-                    placeholder="Nome do coordenador"
-                    value={formData.coordenador}
-                    onChange={(e) => setFormData({ ...formData, coordenador: e.target.value })}
-                    required
-                    disabled={isSaving}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="vice_coordenador">Vice-Coordenador</Label>
-                  <Input
-                    id="vice_coordenador"
-                    placeholder="Nome do vice-coordenador (opcional)"
-                    value={formData.vice_coordenador}
-                    onChange={(e) => setFormData({ ...formData, vice_coordenador: e.target.value })}
-                    disabled={isSaving}
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    disabled={isSaving}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={isSaving}>
-                    {isSaving ? 'Cadastrando...' : 'Cadastrar'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={isSaving}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={isSaving}>
+                      {isSaving ? 'Cadastrando...' : 'Cadastrar'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <Card>
@@ -177,19 +164,25 @@ export default function PastoraisPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Coordenador</TableHead>
-                      <TableHead>Vice-Coordenador</TableHead>
+                      <TableHead>Coordenadores</TableHead>
+                      <TableHead>Vice-Coordenadores</TableHead>
+                      {isAdmin && <TableHead className="text-right">Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {pastorais.map((pastoral) => (
                       <TableRow key={pastoral.id_pastoral}>
-                        <TableCell>{pastoral.id_pastoral}</TableCell>
                         <TableCell className="font-medium">{pastoral.nome_pastoral}</TableCell>
-                        <TableCell>{pastoral.coordenador}</TableCell>
-                        <TableCell>{pastoral.vice_coordenador || '-'}</TableCell>
+                        <TableCell>{pastoral.coordenadores} / 4</TableCell>
+                        <TableCell>{pastoral.vices} / 2</TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-right">
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/pastorais/${pastoral.id_pastoral}/editar`)}>
+                              Editar
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

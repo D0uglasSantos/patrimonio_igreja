@@ -20,7 +20,16 @@ model Usuario {
   senha       String
   tipo_user   TipoUser   @default(COMUM)
   retiradas   RetiradaEmprestimo[] @relation("RetiranteRelation")
+  entregas    RetiradaEmprestimo[] @relation("EntregadorRelation")
   recebimentos RetiradaEmprestimo[] @relation("RecebedorRelation")
+
+  id_pastoral     Int?
+  pastoral        Pastoral? @relation(fields: [id_pastoral], references: [id_pastoral])
+  funcao_pastoral FuncaoPastoral?
+  
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+
 }
 
 model Bem {
@@ -31,20 +40,23 @@ model Bem {
   valor       Decimal?   @db.Decimal(10, 2)
   codigo      String     @unique
   emprestimos RetiradaEmprestimo[]
+  marca       String?
+  modelo      String?
+  local       LocalBem   @default(MATRIZ)
 }
 
 model Pastoral {
   id_pastoral       Int        @id @default(autoincrement())
   nome_pastoral     String
-  coordenador       String
-  vice_coordenador  String?
   emprestimos       RetiradaEmprestimo[]
+  membros           Usuario[]
 }
 
 model RetiradaEmprestimo {
-  id                Int        @id @default(autoincrement())
+id                Int        @id @default(autoincrement())
   id_bem            Int
   id_retirante      Int
+  id_entregador     Int?
   id_recebedor      Int?
   id_pastoral       Int
   data_retirada     DateTime
@@ -52,12 +64,19 @@ model RetiradaEmprestimo {
   estado_retirada   EstadoBem
   estado_devolucao  EstadoBem?
   descricao_motivo_retirada String?
+  justificativa_avaria String?
+  nome_responsavel_devolucao String?
+  email_responsavel_devolucao String?
+  nome_retirante String?
   email_retirante   String
+  data_estimada_devolucao DateTime?
+  finalidade_uso    FinalidadeUso @default(MATRIZ)
 
   // Relacionamentos
   bem         Bem        @relation(fields: [id_bem], references: [id_bem])
   pastoral    Pastoral   @relation(fields: [id_pastoral], references: [id_pastoral])
   retirante   Usuario    @relation("RetiranteRelation", fields: [id_retirante], references: [id_user])
+  entregador  Usuario?   @relation("EntregadorRelation", fields: [id_entregador], references: [id_user])
   recebedor   Usuario?   @relation("RecebedorRelation", fields: [id_recebedor], references: [id_user])
 }
 
@@ -74,4 +93,21 @@ enum EstadoBem {
   NOVO
   USADO
   QUEBRADO
+  EM_MANUTENCAO
+}
+
+enum LocalBem {
+  MATRIZ
+  CAPELA
+}
+
+enum FinalidadeUso {
+  MATRIZ
+  CAPELA
+  PESSOAL
+}
+
+enum FuncaoPastoral {
+  COORDENADOR
+  VICE_COORDENADOR
 }

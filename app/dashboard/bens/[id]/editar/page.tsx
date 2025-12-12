@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useParams, useRouter } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,31 +11,66 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 
-export default function NovoBemPage() {
+type EstadoBem = 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO'
+type LocalBem = 'MATRIZ' | 'CAPELA'
+
+export default function EditarBemPage() {
   const router = useRouter()
+  const params = useParams()
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome_bem: '',
     codigo: '',
-    estado: 'USADO' as 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO',
+    estado: 'USADO' as EstadoBem,
     valor: '',
     foto: '',
     marca: '',
     modelo: '',
-    local: 'MATRIZ' as 'MATRIZ' | 'CAPELA',
+    local: 'MATRIZ' as LocalBem,
   })
 
   useEffect(() => {
-    if (status === 'loading') return
     if (status === 'unauthenticated') {
-      router.replace('/login')
-    } else if (session?.user?.tipo_user !== 'ADM') {
-      toast.error('Acesso negado', { description: 'Você não tem permissão para acessar esta página.' })
-      router.replace('/dashboard')
+      router.push('/login')
+    }
+    if (status === 'authenticated' && session.user.tipo_user !== 'ADM') {
+      toast.error('Acesso negado')
+      router.push('/dashboard')
     }
   }, [session, status, router])
+
+  useEffect(() => {
+    const fetchBem = async () => {
+      try {
+        const response = await fetch(`/api/bens/${params.id}`)
+        if (!response.ok) {
+          throw new Error('Bem não encontrado')
+        }
+        const data = await response.json()
+        setFormData({
+          nome_bem: data.nome_bem,
+          codigo: data.codigo,
+          estado: data.estado,
+          valor: data.valor ? String(data.valor) : '',
+          foto: data.foto || '',
+          marca: data.marca || '',
+          modelo: data.modelo || '',
+          local: data.local,
+        })
+      } catch (error: any) {
+        toast.error('Erro ao carregar dados do bem', {
+          description: error.message,
+        })
+      }
+    }
+
+    if (params.id) {
+      fetchBem()
+    }
+  }, [params.id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,8 +85,8 @@ export default function NovoBemPage() {
         modelo: formData.modelo || null,
       }
 
-      const response = await fetch('/api/bens', {
-        method: 'POST',
+      const response = await fetch(`/api/bens/${params.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -61,19 +95,23 @@ export default function NovoBemPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Erro ao cadastrar bem')
+        throw new Error(error.error || 'Erro ao atualizar bem')
       }
 
-      toast.success('Bem cadastrado com sucesso!')
-      router.push('/dashboard')
+      toast.success('Bem atualizado com sucesso!')
+      router.push(`/dashboard/bens/${params.id}`)
       router.refresh()
     } catch (error: any) {
-      toast.error('Erro ao cadastrar bem', {
+      toast.error('Erro ao atualizar bem', {
         description: error.message,
       })
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (status === 'loading' || !session) {
+    return <p>Carregando...</p>
   }
 
   return (
@@ -82,19 +120,19 @@ export default function NovoBemPage() {
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <Link href="/dashboard">
+          <Link href={`/dashboard/bens/${params.id}`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao Dashboard
+              Cancelar Edição
             </Button>
           </Link>
         </div>
 
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle>Cadastrar Novo Bem</CardTitle>
+            <CardTitle>Editar Bem</CardTitle>
             <CardDescription>
-              Preencha os dados do bem a ser cadastrado no patrimônio
+              Atualize os dados do bem.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -104,7 +142,6 @@ export default function NovoBemPage() {
                   <Label htmlFor="nome_bem">Nome do Bem *</Label>
                   <Input
                     id="nome_bem"
-                    placeholder="Ex: Projetor Multimídia"
                     value={formData.nome_bem}
                     onChange={(e) => setFormData({ ...formData, nome_bem: e.target.value })}
                     required
@@ -116,7 +153,6 @@ export default function NovoBemPage() {
                   <Label htmlFor="codigo">Código *</Label>
                   <Input
                     id="codigo"
-                    placeholder="Ex: PROJ-001"
                     value={formData.codigo}
                     onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
                     required
@@ -130,7 +166,6 @@ export default function NovoBemPage() {
                   <Label htmlFor="marca">Marca</Label>
                   <Input
                     id="marca"
-                    placeholder="Ex: Epson"
                     value={formData.marca}
                     onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
                     disabled={isLoading}
@@ -141,7 +176,6 @@ export default function NovoBemPage() {
                   <Label htmlFor="modelo">Modelo</Label>
                   <Input
                     id="modelo"
-                    placeholder="Ex: PowerLite S41+"
                     value={formData.modelo}
                     onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
                     disabled={isLoading}
@@ -154,7 +188,7 @@ export default function NovoBemPage() {
                   <Label htmlFor="estado">Estado do Bem *</Label>
                   <Select
                     value={formData.estado}
-                    onValueChange={(value: 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO') => 
+                    onValueChange={(value: EstadoBem) => 
                       setFormData({ ...formData, estado: value })
                     }
                     disabled={isLoading}
@@ -175,7 +209,7 @@ export default function NovoBemPage() {
                   <Label htmlFor="local">Localização *</Label>
                   <Select
                     value={formData.local}
-                    onValueChange={(value: 'MATRIZ' | 'CAPELA') => 
+                    onValueChange={(value: LocalBem) => 
                       setFormData({ ...formData, local: value })
                     }
                     disabled={isLoading}
@@ -198,7 +232,6 @@ export default function NovoBemPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="Ex: 2500.00"
                   value={formData.valor}
                   onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                   disabled={isLoading}
@@ -210,7 +243,6 @@ export default function NovoBemPage() {
                 <Input
                   id="foto"
                   type="url"
-                  placeholder="https://exemplo.com/foto.jpg"
                   value={formData.foto}
                   onChange={(e) => setFormData({ ...formData, foto: e.target.value })}
                   disabled={isLoading}
@@ -228,7 +260,7 @@ export default function NovoBemPage() {
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isLoading} className="flex-1">
-                  {isLoading ? 'Cadastrando...' : 'Cadastrar Bem'}
+                  {isLoading ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
               </div>
             </form>
@@ -238,4 +270,3 @@ export default function NovoBemPage() {
     </div>
   )
 }
-

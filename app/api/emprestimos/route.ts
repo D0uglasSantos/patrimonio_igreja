@@ -46,6 +46,14 @@ export async function GET(req: NextRequest) {
             tipo_user: true,
           },
         },
+        entregador: {
+          select: {
+            id_user: true,
+            nome: true,
+            email: true,
+            tipo_user: true,
+          },
+        },
         recebedor: {
           select: {
             id_user: true,
@@ -75,11 +83,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    // Apenas ADM pode registrar retirada
+    if (session.user.tipo_user !== 'ADM') {
+      return NextResponse.json({ error: 'Acesso negado. Apenas administradores podem registrar retiradas.' }, { status: 403 })
+    }
+
     const body = await req.json()
     const validacao = retiradaSchema.safeParse(body)
 
     if (!validacao.success) {
-      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.issues }, { status: 400 })
     }
 
     // Verificar se o bem existe
@@ -121,6 +134,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pastoral não encontrada' }, { status: 404 })
     }
 
+    // Verificar se o entregador existe
+    const entregador = await prisma.usuario.findUnique({
+      where: { id_user: validacao.data.id_entregador },
+    })
+
+    if (!entregador) {
+      return NextResponse.json({ error: 'Entregador não encontrado' }, { status: 404 })
+    }
+
+    if (entregador.tipo_user !== 'ADM') {
+      return NextResponse.json({ error: 'O entregador deve ser um administrador' }, { status: 400 })
+    }
+
     // Criar o registro de retirada
     const retirada = await prisma.retiradaEmprestimo.create({
       data: {
@@ -131,6 +157,13 @@ export async function POST(req: NextRequest) {
         bem: true,
         pastoral: true,
         retirante: {
+          select: {
+            id_user: true,
+            nome: true,
+            email: true,
+          },
+        },
+        entregador: {
           select: {
             id_user: true,
             nome: true,

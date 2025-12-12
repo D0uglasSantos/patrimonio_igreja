@@ -10,7 +10,7 @@ interface Bem {
   id_bem: number
   nome_bem: string
   codigo: string
-  estado: 'NOVO' | 'USADO' | 'QUEBRADO'
+  estado: 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO'
   valor: number | null
   foto: string | null
   emprestimos?: any[]
@@ -25,16 +25,20 @@ const estadoCores = {
   NOVO: 'bg-green-100 text-green-800',
   USADO: 'bg-blue-100 text-blue-800',
   QUEBRADO: 'bg-red-100 text-red-800',
+  EM_MANUTENCAO: 'bg-yellow-100 text-yellow-800',
 }
 
 const estadoLabels = {
   NOVO: 'Novo',
   USADO: 'Usado',
   QUEBRADO: 'Quebrado',
+  EM_MANUTENCAO: 'Em Manutenção',
 }
 
 export function BemCard({ bem, isAdmin }: BemCardProps) {
-  const disponivel = !bem.emprestimos || bem.emprestimos.length === 0
+  // Um bem está disponível se não tiver empréstimos ativos (sem data_entrega)
+  const emprestimosAtivos = bem.emprestimos?.filter((emp: any) => !emp.data_entrega) || []
+  const disponivel = emprestimosAtivos.length === 0
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -69,22 +73,22 @@ export function BemCard({ bem, isAdmin }: BemCardProps) {
       </CardContent>
       
       <CardFooter className="flex gap-2">
-        {disponivel && (
+        {isAdmin && disponivel && (
           <Link href={`/dashboard/emprestimos/retirada/${bem.id_bem}`} className="flex-1">
             <Button variant="default" size="sm" className="w-full">
               Retirar
             </Button>
           </Link>
         )}
-        {!disponivel && (
-          <Link href={`/dashboard/emprestimos/devolucao/${bem.emprestimos?.[0]?.id}`} className="flex-1">
+        {isAdmin && !disponivel && emprestimosAtivos.length > 0 && (
+          <Link href={`/dashboard/emprestimos/devolucao/${emprestimosAtivos[0]?.id}`} className="flex-1">
             <Button variant="outline" size="sm" className="w-full">
               Devolver
             </Button>
           </Link>
         )}
-        <Link href={`/dashboard/bens/${bem.id_bem}`}>
-          <Button variant="ghost" size="sm">
+        <Link href={`/dashboard/bens/${bem.id_bem}`} className="flex-1">
+          <Button variant="ghost" size="sm" className="w-full">
             Detalhes
           </Button>
         </Link>

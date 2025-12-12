@@ -7,25 +7,41 @@ import { bemUpdateSchema } from '@/lib/validations'
 // GET /api/bens/[id] - Buscar um bem específico
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const resolvedParams = params instanceof Promise ? await params : params
+  const id = resolvedParams.id
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const id = parseInt(params.id)
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    console.log('params recebido na API GET /api/bens/[id]:', resolvedParams, 'id:', id)
+    if (!id || typeof id !== 'string') {
+      console.log('Erro: id ausente ou não é string: ', id)
+      return NextResponse.json({ error: 'ID ausente ou inválido', paramsRec: resolvedParams }, { status: 400 })
+    }
+    const idInt = parseInt(id)
+    console.log('Resultado do parseInt para id:', idInt)
+    if (isNaN(idInt)) {
+      console.log('Erro: id não é número:', id)
+      return NextResponse.json({ error: 'ID inválido', paramsId: id }, { status: 400 })
     }
 
     const bem = await prisma.bem.findUnique({
-      where: { id_bem: id },
+      where: { id_bem: idInt },
       include: {
         emprestimos: {
           include: {
             retirante: {
+              select: {
+                id_user: true,
+                nome: true,
+                email: true,
+              },
+            },
+            entregador: {
               select: {
                 id_user: true,
                 nome: true,
@@ -55,15 +71,17 @@ export async function GET(
     return NextResponse.json(bem)
   } catch (error) {
     console.error('Erro ao buscar bem:', error)
-    return NextResponse.json({ error: 'Erro ao buscar bem' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao buscar bem', detalhe: (error as any)?.message || error }, { status: 500 })
   }
 }
 
 // PUT /api/bens/[id] - Atualizar um bem (ADM apenas)
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const resolvedParams = params instanceof Promise ? await params : params
+  const id = resolvedParams.id
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
@@ -74,8 +92,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Acesso negado. Apenas administradores podem atualizar bens.' }, { status: 403 })
     }
 
-    const id = parseInt(params.id)
-    if (isNaN(id)) {
+    const idInt = parseInt(id)
+    if (isNaN(idInt)) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
@@ -83,12 +101,12 @@ export async function PUT(
     const validacao = bemUpdateSchema.safeParse(body)
 
     if (!validacao.success) {
-      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Dados inválidos', detalhes: (validacao as any).error?.errors }, { status: 400 })
     }
 
     // Verificar se o bem existe
     const bemExistente = await prisma.bem.findUnique({
-      where: { id_bem: id },
+      where: { id_bem: idInt },
     })
 
     if (!bemExistente) {
@@ -107,22 +125,24 @@ export async function PUT(
     }
 
     const bemAtualizado = await prisma.bem.update({
-      where: { id_bem: id },
+      where: { id_bem: idInt },
       data: validacao.data,
     })
 
     return NextResponse.json(bemAtualizado)
   } catch (error) {
     console.error('Erro ao atualizar bem:', error)
-    return NextResponse.json({ error: 'Erro ao atualizar bem' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao atualizar bem', detalhe: (error as any)?.message || error }, { status: 500 })
   }
 }
 
 // DELETE /api/bens/[id] - Deletar um bem (ADM apenas)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const resolvedParams = params instanceof Promise ? await params : params
+  const id = resolvedParams.id
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
@@ -133,14 +153,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Acesso negado. Apenas administradores podem deletar bens.' }, { status: 403 })
     }
 
-    const id = parseInt(params.id)
-    if (isNaN(id)) {
+    const idInt = parseInt(id)
+    if (isNaN(idInt)) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
     // Verificar se o bem existe
     const bemExistente = await prisma.bem.findUnique({
-      where: { id_bem: id },
+      where: { id_bem: idInt },
       include: {
         emprestimos: true,
       },
@@ -157,13 +177,13 @@ export async function DELETE(
     }
 
     await prisma.bem.delete({
-      where: { id_bem: id },
+      where: { id_bem: idInt },
     })
 
     return NextResponse.json({ message: 'Bem deletado com sucesso' })
   } catch (error) {
     console.error('Erro ao deletar bem:', error)
-    return NextResponse.json({ error: 'Erro ao deletar bem' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao deletar bem', detalhe: (error as any)?.message || error }, { status: 500 })
   }
 }
 

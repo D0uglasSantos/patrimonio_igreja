@@ -23,6 +23,13 @@ export async function GET(req: NextRequest) {
         nome: true,
         email: true,
         tipo_user: true,
+        funcao_pastoral: true,
+        pastoral: {
+          select: {
+            id_pastoral: true,
+            nome_pastoral: true,
+          },
+        },
         // Não retornar a senha
       },
       orderBy: {
@@ -53,34 +60,57 @@ export async function POST(req: NextRequest) {
     const validacao = usuarioSchema.safeParse(body)
 
     if (!validacao.success) {
-      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.issues }, { status: 400 })
     }
+
+    const { email, senha, id_pastoral, funcao_pastoral } = validacao.data
 
     // Verificar se o email já existe
     const usuarioExistente = await prisma.usuario.findUnique({
-      where: { email: validacao.data.email },
+      where: { email },
     })
 
     if (usuarioExistente) {
       return NextResponse.json({ error: 'Já existe um usuário com este email' }, { status: 400 })
     }
 
+    // Validar regras de cardinalidade da pastoral
+    const pastoralAlvo = await prisma.pastoral.findUnique({
+      where: { id_pastoral },
+      include: { membros: true },
+    })
+
+    if (!pastoralAlvo) {
+      return NextResponse.json({ error: 'Pastoral não encontrada' }, { status: 404 })
+    }
+
+    const coordenadoresAtuais = pastoralAlvo.membros.filter(m => m.funcao_pastoral === 'COORDENADOR').length
+    const vicesAtuais = pastoralAlvo.membros.filter(m => m.funcao_pastoral === 'VICE_COORDENADOR').length
+
+    if (funcao_pastoral === 'COORDENADOR' && coordenadoresAtuais >= 4) {
+      return NextResponse.json({ error: 'Limite de 4 coordenadores por pastoral atingido' }, { status: 400 })
+    }
+
+    if (funcao_pastoral === 'VICE_COORDENADOR' && vicesAtuais >= 2) {
+      return NextResponse.json({ error: 'Limite de 2 vice-coordenadores por pastoral atingido' }, { status: 400 })
+    }
+
     // Hash da senha
-    const senhaHash = await hashPassword(validacao.data.senha)
+    const senhaHash = await hashPassword(senha)
 
     // Criar o usuário
     const novoUsuario = await prisma.usuario.create({
       data: {
-        nome: validacao.data.nome,
-        email: validacao.data.email,
+        ...validacao.data,
         senha: senhaHash,
-        tipo_user: validacao.data.tipo_user,
       },
       select: {
         id_user: true,
         nome: true,
         email: true,
         tipo_user: true,
+        pastoral: { select: { nome_pastoral: true } },
+        funcao_pastoral: true,
       },
     })
 
