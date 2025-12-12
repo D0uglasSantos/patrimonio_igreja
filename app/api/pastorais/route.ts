@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
       orderBy: {
         nome_pastoral: 'asc',
       },
+      include: {
+        membros: true,
+      },
     })
 
     return NextResponse.json(pastorais)
@@ -41,12 +44,14 @@ export async function POST(req: NextRequest) {
     const validacao = pastoralSchema.safeParse(body)
 
     if (!validacao.success) {
-      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.issues }, { status: 400 })
     }
 
     // Criar a pastoral
     const novaPastoral = await prisma.pastoral.create({
-      data: validacao.data,
+      data: {
+        nome_pastoral: validacao.data.nome_pastoral,
+      },
     })
 
     return NextResponse.json(novaPastoral, { status: 201 })

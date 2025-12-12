@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
       include: {
         emprestimos: {
           where: {
-            data_entrega: disponivel === 'true' ? null : undefined,
+            // Sempre retornar apenas empréstimos ativos (não devolvidos)
+            data_entrega: null,
           },
           orderBy: {
             data_retirada: 'desc',
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     const validacao = bemSchema.safeParse(body)
 
     if (!validacao.success) {
-      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.issues }, { status: 400 })
     }
 
     // Verificar se o código já existe

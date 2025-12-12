@@ -7,7 +7,7 @@ import { devolucaoSchema } from '@/lib/validations'
 // PUT /api/emprestimos/[id]/devolucao - Registrar devolução de bem
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,16 +15,36 @@ export async function PUT(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const id = parseInt(params.id)
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    // Apenas ADM pode registrar devolução
+    if (session.user.tipo_user !== 'ADM') {
+      return NextResponse.json({ error: 'Acesso negado. Apenas administradores podem registrar devoluções.' }, { status: 403 })
     }
 
-    const body = await req.json()
+    // Resolver params se for uma Promise (Next.js 15+)
+    const resolvedParams = params instanceof Promise ? await params : params
+    const id = parseInt(resolvedParams.id)
+    
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'ID inválido', detalhes: `ID recebido: ${resolvedParams.id}` }, { status: 400 })
+    }
+
+    let body
+    try {
+      body = await req.json()
+    } catch (error) {
+      return NextResponse.json({ 
+        error: 'Body inválido', 
+        detalhes: 'Não foi possível processar o corpo da requisição' 
+      }, { status: 400 })
+    }
+
     const validacao = devolucaoSchema.safeParse(body)
 
     if (!validacao.success) {
-      return NextResponse.json({ error: 'Dados inválidos', detalhes: validacao.error.errors }, { status: 400 })
+      return NextResponse.json({ 
+        error: 'Dados inválidos', 
+        detalhes: validacao.error.issues 
+      }, { status: 400 })
     }
 
     // Verificar se o empréstimo existe
@@ -58,8 +78,13 @@ export async function PUT(
       where: { id: id },
       data: {
         data_entrega: new Date(),
-        id_recebedor: validacao.data.id_recebedor,
+        recebedor: {
+          connect: { id_user: validacao.data.id_recebedor }
+        },
         estado_devolucao: validacao.data.estado_devolucao,
+        justificativa_avaria: validacao.data.justificativa_avaria,
+        nome_responsavel_devolucao: validacao.data.nome_responsavel_devolucao,
+        email_responsavel_devolucao: validacao.data.email_responsavel_devolucao,
       },
       include: {
         bem: true,
@@ -94,7 +119,11 @@ export async function PUT(
     return NextResponse.json(devolucao)
   } catch (error) {
     console.error('Erro ao registrar devolução:', error)
-    return NextResponse.json({ error: 'Erro ao registrar devolução' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    return NextResponse.json({ 
+      error: 'Erro ao registrar devolução',
+      detalhes: errorMessage
+    }, { status: 500 })
   }
 }
 

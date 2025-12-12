@@ -134,20 +134,26 @@ export async function GET(req: NextRequest) {
               bem: true,
             },
           },
+          membros: true,
         },
         orderBy: {
           nome_pastoral: 'asc',
         },
       })
 
-      dados = pastorais.map(pastoral => ({
-        id_pastoral: pastoral.id_pastoral,
-        nome_pastoral: pastoral.nome_pastoral,
-        coordenador: pastoral.coordenador,
-        vice_coordenador: pastoral.vice_coordenador || 'N/A',
-        total_emprestimos: pastoral.emprestimos.length,
-        emprestimos_ativos: pastoral.emprestimos.filter(e => !e.data_entrega).length,
-      }))
+      dados = pastorais.map(pastoral => {
+        const coordenador = pastoral.membros.find(m => m.funcao_pastoral === 'COORDENADOR')
+        const viceCoordenador = pastoral.membros.find(m => m.funcao_pastoral === 'VICE_COORDENADOR')
+        
+        return {
+          id_pastoral: pastoral.id_pastoral,
+          nome_pastoral: pastoral.nome_pastoral,
+          coordenador: coordenador?.nome || 'N/A',
+          vice_coordenador: viceCoordenador?.nome || 'N/A',
+          total_emprestimos: pastoral.emprestimos.length,
+          emprestimos_ativos: pastoral.emprestimos.filter(e => !e.data_entrega).length,
+        }
+      })
     } else {
       return NextResponse.json({ error: 'Tipo de relatório inválido' }, { status: 400 })
     }

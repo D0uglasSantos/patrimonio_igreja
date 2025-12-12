@@ -40,24 +40,18 @@ async function main() {
   const pastoralJuventude = await prisma.pastoral.create({
     data: {
       nome_pastoral: 'Pastoral da Juventude',
-      coordenador: 'Maria Santos',
-      vice_coordenador: 'Pedro Oliveira',
     },
   })
 
   const pastoralCaridade = await prisma.pastoral.create({
     data: {
       nome_pastoral: 'Pastoral da Caridade',
-      coordenador: 'Ana Costa',
-      vice_coordenador: 'José Ferreira',
     },
   })
 
   const pastoralLiturgia = await prisma.pastoral.create({
     data: {
       nome_pastoral: 'Pastoral da Liturgia',
-      coordenador: 'Carlos Almeida',
-      vice_coordenador: null,
     },
   })
 
