@@ -282,6 +282,86 @@ docker run -d \
 
 ---
 
+## 🚀 Deploy na Vercel
+
+**⚠️ Importante:** A Vercel não suporta Docker para bancos de dados. Você precisa usar um serviço de banco de dados gerenciado.
+
+### Opções de Banco de Dados para Vercel
+
+#### Opção 1: Vercel Postgres (Recomendado - Mais Fácil)
+1. No painel da Vercel, vá em **Storage** → **Create Database** → **Postgres**
+2. Escolha um plano (há um plano gratuito)
+3. A Vercel criará automaticamente a variável `POSTGRES_URL` no formato correto
+4. Use `POSTGRES_URL` como `DATABASE_URL` nas variáveis de ambiente
+
+#### Opção 2: Supabase (Gratuito e Popular)
+1. Crie uma conta em [supabase.com](https://supabase.com)
+2. Crie um novo projeto
+3. Vá em **Settings** → **Database** → copie a **Connection String**
+4. Use essa string como `DATABASE_URL` na Vercel
+
+#### Opção 3: Neon (Gratuito e Rápido)
+1. Crie uma conta em [neon.tech](https://neon.tech)
+2. Crie um novo projeto
+3. Copie a **Connection String** do dashboard
+4. Use essa string como `DATABASE_URL` na Vercel
+
+#### Opção 4: Railway (Fácil de usar)
+1. Crie uma conta em [railway.app](https://railway.app)
+2. Crie um novo projeto → **New** → **Database** → **PostgreSQL**
+3. Copie a **DATABASE_URL** das variáveis de ambiente
+4. Use essa string como `DATABASE_URL` na Vercel
+
+### Passo a Passo do Deploy
+
+1. **Conecte seu repositório GitHub à Vercel**
+   - Acesse [vercel.com](https://vercel.com)
+   - Faça login com GitHub
+   - Clique em **Add New Project**
+   - Selecione seu repositório
+
+2. **Configure as Variáveis de Ambiente**
+   - No painel do projeto, vá em **Settings** → **Environment Variables**
+   - Adicione as seguintes variáveis:
+     ```
+     DATABASE_URL=postgresql://usuario:senha@host:porta/banco?schema=public
+     NEXTAUTH_URL=https://seu-dominio.vercel.app
+     NEXTAUTH_SECRET=uma-string-secreta-aleatoria-muito-longa
+     ```
+   - ⚠️ **IMPORTANTE:** Use uma string aleatória longa para `NEXTAUTH_SECRET` (pode gerar com: `openssl rand -base64 32`)
+
+3. **Execute as Migrações do Banco**
+   - Após o primeiro deploy, você precisa executar as migrações
+   - Opções:
+     - **Opção A:** Use o Vercel CLI localmente:
+       ```bash
+       npx vercel env pull .env.local
+       npx prisma migrate deploy
+       ```
+     - **Opção B:** Adicione um script no `package.json`:
+       ```json
+       "vercel-build": "prisma migrate deploy && next build"
+       ```
+     - **Opção C:** Use o Prisma Studio ou execute via terminal conectado ao banco
+
+4. **Execute o Seed (Opcional)**
+   - Se quiser popular o banco com dados iniciais:
+   ```bash
+   npx prisma db seed
+   ```
+
+5. **Deploy Automático**
+   - A Vercel fará deploy automaticamente a cada push no branch `main`
+   - Você pode configurar branches de preview também
+
+### Troubleshooting
+
+- **Erro "Missing DATABASE_URL":** Verifique se a variável está configurada corretamente no painel da Vercel
+- **Erro de migração:** Execute `prisma migrate deploy` manualmente após o primeiro deploy
+- **Erro de conexão:** Verifique se o banco de dados permite conexões externas (firewall/whitelist)
+
+---
+
 ## 📁 Estrutura do Projeto
 
 ```
