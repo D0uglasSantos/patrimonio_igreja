@@ -1,5 +1,6 @@
-import { TipoUser } from '@prisma/client'
 import 'next-auth'
+
+type TipoUser = 'ADM' | 'COMUM'
 
 declare module 'next-auth' {
   interface Session {

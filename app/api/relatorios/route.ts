@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-import { EstadoBem } from '@prisma/client'
 import ExcelJS from 'exceljs'
+
+type EstadoBem = 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO'
 
 // GET /api/relatorios - Gerar relatório com filtros
 export async function GET(req: NextRequest) {

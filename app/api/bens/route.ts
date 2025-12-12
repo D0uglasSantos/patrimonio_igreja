@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import { bemSchema } from '@/lib/validations'
-import { EstadoBem } from '@prisma/client'
+
+type EstadoBem = 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO'
 
 // GET /api/bens - Listar bens com filtros opcionais
 export async function GET(req: NextRequest) {
