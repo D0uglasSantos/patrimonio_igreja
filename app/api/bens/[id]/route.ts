@@ -176,6 +176,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não é possível deletar um bem com empréstimos ativos' }, { status: 400 })
     }
 
+    // Verificar se há empréstimos históricos (o banco bloqueia com ON DELETE RESTRICT)
+    if (bemExistente.emprestimos.length > 0) {
+      return NextResponse.json({ error: 'Não é possível deletar um bem que possui histórico de empréstimos. O histórico deve ser preservado.' }, { status: 400 })
+    }
+
     await prisma.bem.delete({
       where: { id_bem: idInt },
     })

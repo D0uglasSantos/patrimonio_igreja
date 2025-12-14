@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { UserPlus } from 'lucide-react'
+import { UserPlus, Trash2 } from 'lucide-react'
 
 type FuncaoPastoral = 'COORDENADOR' | 'VICE_COORDENADOR'
 
@@ -25,6 +25,9 @@ export default function UsuariosPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [usuarioToDelete, setUsuarioToDelete] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -114,6 +117,38 @@ export default function UsuariosPage() {
       })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDeleteClick = (usuarioId: number) => {
+    setUsuarioToDelete(usuarioId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!usuarioToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/usuarios/${usuarioToDelete}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao deletar usuário')
+      }
+
+      toast.success('Usuário deletado com sucesso!')
+      setIsDeleteDialogOpen(false)
+      setUsuarioToDelete(null)
+      fetchInitialData()
+    } catch (error: any) {
+      toast.error('Erro ao deletar usuário', {
+        description: error.message,
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -246,9 +281,18 @@ export default function UsuariosPage() {
                         </TableCell>
                         {isAdmin && (
                           <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/usuarios/${usuario.id_user}/editar`)}>
-                              Editar
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/usuarios/${usuario.id_user}/editar`)}>
+                                Editar
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                onClick={() => handleDeleteClick(usuario.id_user)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
@@ -260,6 +304,44 @@ export default function UsuariosPage() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Dialog de confirmação de exclusão */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              {usuarioToDelete && (
+                <>
+                  Tem certeza que deseja excluir o usuário <strong>{usuarios.find(u => u.id_user === usuarioToDelete)?.nome}</strong>?
+                  <br />
+                  <br />
+                  Esta ação não pode ser desfeita. O usuário só poderá ser excluído se não houver empréstimos (ativos ou históricos como retirante).
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setUsuarioToDelete(null)
+              }}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -89,3 +89,56 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
+
+// DELETE /api/usuarios/[id] - Deletar um usuário (ADM apenas)
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> | { id: string } }) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session || session.user.tipo_user !== 'ADM') {
+      return NextResponse.json({ error: 'Acesso negado. Apenas administradores podem deletar usuários.' }, { status: 403 })
+    }
+
+    const resolvedParams = params instanceof Promise ? await params : params
+    const id = parseInt(resolvedParams.id)
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    }
+
+    // Verificar se o usuário existe
+    const usuarioExistente = await prisma.usuario.findUnique({
+      where: { id_user: id },
+      include: {
+        retiradas: true, // Verificar todos os empréstimos (histórico completo)
+      },
+    })
+
+    if (!usuarioExistente) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+    }
+
+    // Não permitir que um administrador exclua a si mesmo
+    if (session.user.id_user === id) {
+      return NextResponse.json({ error: 'Não é possível excluir seu próprio usuário' }, { status: 400 })
+    }
+
+    // Verificar se há empréstimos ativos
+    const emprestimosAtivos = usuarioExistente.retiradas.filter((emp: { data_entrega: Date | null }) => !emp.data_entrega)
+    if (emprestimosAtivos.length > 0) {
+      return NextResponse.json({ error: 'Não é possível deletar um usuário com empréstimos ativos' }, { status: 400 })
+    }
+
+    // Verificar se há empréstimos históricos como retirante (o banco bloqueia com ON DELETE RESTRICT)
+    if (usuarioExistente.retiradas.length > 0) {
+      return NextResponse.json({ error: 'Não é possível deletar um usuário que possui histórico de empréstimos como retirante. O histórico deve ser preservado.' }, { status: 400 })
+    }
+
+    await prisma.usuario.delete({
+      where: { id_user: id },
+    })
+
+    return NextResponse.json({ message: 'Usuário deletado com sucesso' })
+  } catch (error) {
+    console.error('Erro ao deletar usuário:', error)
+    return NextResponse.json({ error: 'Erro ao deletar usuário', detalhe: (error as any)?.message || error }, { status: 500 })
+  }
+}

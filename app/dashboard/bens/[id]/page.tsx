@@ -6,10 +6,11 @@ import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Edit } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function BemDetalhesPage() {
   const params = useParams()
@@ -17,6 +18,8 @@ export default function BemDetalhesPage() {
   const { data: session } = useSession()
   const [bem, setBem] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const fetchBem = async () => {
@@ -40,6 +43,30 @@ export default function BemDetalhesPage() {
       fetchBem()
     }
   }, [params.id])
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/bens/${params.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao deletar bem')
+      }
+
+      toast.success('Bem deletado com sucesso!')
+      router.push('/dashboard/bens')
+    } catch (error: any) {
+      toast.error('Erro ao deletar bem', {
+        description: error.message,
+      })
+    } finally {
+      setIsDeleting(false)
+      setIsDeleteDialogOpen(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -81,17 +108,27 @@ export default function BemDetalhesPage() {
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
-          <Link href="/dashboard">
+          <Link href="/dashboard/bens">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar para a Lista de Bens
             </Button>
           </Link>
           {session?.user.tipo_user === 'ADM' && (
-            <Button size="sm" onClick={() => router.push(`/dashboard/bens/${bem.id_bem}/editar`)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => router.push(`/dashboard/bens/${bem.id_bem}/editar`)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            </div>
           )}
         </div>
 
@@ -283,6 +320,37 @@ export default function BemDetalhesPage() {
           </Card>
         </div>
       </main>
+
+      {/* Dialog de confirmação de exclusão */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o bem <strong>{bem?.nome_bem}</strong> (Código: {bem?.codigo})?
+              <br />
+              <br />
+              Esta ação não pode ser desfeita. O bem só poderá ser excluído se não houver empréstimos (ativos ou históricos).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
