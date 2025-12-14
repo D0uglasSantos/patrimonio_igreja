@@ -117,7 +117,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     // Não permitir que um administrador exclua a si mesmo
-    if (session.user.id_user === id) {
+    if (session.user.id === id) {
       return NextResponse.json({ error: 'Não é possível excluir seu próprio usuário' }, { status: 400 })
     }
 
