@@ -12,29 +12,51 @@ export const authOptions: AuthOptions = {
         senha: { label: 'Senha', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.senha) {
-          throw new Error('Email e senha são obrigatórios')
-        }
+        try {
+          if (!credentials?.email || !credentials?.senha) {
+            console.error('[NextAuth] Email e senha são obrigatórios')
+            return null
+          }
 
-        const usuario = await prisma.usuario.findUnique({
-          where: { email: credentials.email },
-        })
+          console.log(`[NextAuth] Tentativa de login para: ${credentials.email}`)
 
-        if (!usuario) {
-          throw new Error('Credenciais inválidas')
-        }
+          // Verificar conexão com banco
+          try {
+            await prisma.$connect()
+          } catch (dbError) {
+            console.error('[NextAuth] Erro ao conectar com o banco de dados:', dbError)
+            throw new Error('Erro de conexão com o banco de dados')
+          }
 
-        const senhaValida = await verifyPassword(credentials.senha, usuario.senha)
+          const usuario = await prisma.usuario.findUnique({
+            where: { email: credentials.email },
+          })
 
-        if (!senhaValida) {
-          throw new Error('Credenciais inválidas')
-        }
+          if (!usuario) {
+            console.error(`[NextAuth] Usuário não encontrado: ${credentials.email}`)
+            return null
+          }
 
-        return {
-          id: usuario.id_user,
-          nome: usuario.nome,
-          email: usuario.email,
-          tipo_user: usuario.tipo_user,
+          console.log(`[NextAuth] Usuário encontrado: ${usuario.email}`)
+
+          const senhaValida = await verifyPassword(credentials.senha, usuario.senha)
+
+          if (!senhaValida) {
+            console.error(`[NextAuth] Senha inválida para usuário: ${credentials.email}`)
+            return null
+          }
+
+          console.log(`[NextAuth] Autenticação bem-sucedida para: ${usuario.email}`)
+
+          return {
+            id: usuario.id_user,
+            nome: usuario.nome,
+            email: usuario.email,
+            tipo_user: usuario.tipo_user,
+          }
+        } catch (error) {
+          console.error('[NextAuth] Erro na autenticação:', error)
+          return null
         }
       },
     }),
@@ -66,6 +88,7 @@ export const authOptions: AuthOptions = {
     strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 }
 
 const handler = NextAuth(authOptions)

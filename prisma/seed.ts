@@ -6,11 +6,26 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...')
 
-  // Limpar dados existentes (opcional - comentar em produção)
-  await prisma.retiradaEmprestimo.deleteMany()
-  await prisma.bem.deleteMany()
-  await prisma.pastoral.deleteMany()
-  await prisma.usuario.deleteMany()
+  // Verificar se já existe usuário admin
+  const adminExistente = await prisma.usuario.findUnique({
+    where: { email: 'admin@paroquia.com' },
+  })
+
+  if (adminExistente) {
+    console.log('⚠️  Usuário admin já existe. Pulando criação de dados iniciais.')
+    console.log('📝 Para recriar os dados, delete os registros existentes primeiro.')
+    return
+  }
+
+  // Limpar dados existentes apenas se não houver admin
+  try {
+    await prisma.retiradaEmprestimo.deleteMany()
+    await prisma.bem.deleteMany()
+    await prisma.pastoral.deleteMany()
+    await prisma.usuario.deleteMany()
+  } catch (error) {
+    console.log('⚠️  Erro ao limpar dados (pode ser normal se o banco estiver vazio):', error)
+  }
 
   // Criar usuário administrador
   const senhaHashAdmin = await bcrypt.hash('admin123', 10)

@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Output standalone para Docker
-  output: 'standalone',
+  // Output standalone apenas para Docker, não para Vercel
+  // A Vercel gerencia isso automaticamente
+  ...(process.env.DOCKER_BUILD === 'true' && { output: 'standalone' }),
   
   // Configuração de imagens
   images: {
