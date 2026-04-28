@@ -1,14 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { FileDown, FileSpreadsheet } from 'lucide-react'
+import { FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListFilter } from 'lucide-react'
+
+const ITENS_POR_PAGINA_OPCOES = [10, 25, 50, 100]
 
 export default function RelatoriosPage() {
   const [tipo, setTipo] = useState<string>('bens')
@@ -20,6 +23,8 @@ export default function RelatoriosPage() {
   const [pastorais, setPastorais] = useState<any[]>([])
   const [dados, setDados] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [paginaAtual, setPaginaAtual] = useState(1)
+  const [itensPorPagina, setItensPorPagina] = useState(25)
 
   useEffect(() => {
     const fetchPastorais = async () => {
@@ -37,8 +42,25 @@ export default function RelatoriosPage() {
     fetchPastorais()
   }, [])
 
+  const dadosPaginados = useMemo(() => {
+    if (!dados?.dados) return []
+    const inicio = (paginaAtual - 1) * itensPorPagina
+    return dados.dados.slice(inicio, inicio + itensPorPagina)
+  }, [dados, paginaAtual, itensPorPagina])
+
+  const totalPaginas = useMemo(() => {
+    if (!dados?.dados) return 0
+    return Math.ceil(dados.dados.length / itensPorPagina)
+  }, [dados, itensPorPagina])
+
+  const colunas = useMemo(() => {
+    if (!dados?.dados?.length) return []
+    return Object.keys(dados.dados[0])
+  }, [dados])
+
   const handleGerarRelatorio = async () => {
     setIsLoading(true)
+    setPaginaAtual(1)
     try {
       const params = new URLSearchParams({ tipo, formato: 'json' })
       
@@ -105,24 +127,26 @@ export default function RelatoriosPage() {
   }
 
   return (
-    <main className="p-4 md:p-8 max-w-[1280px] mx-auto w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Relatórios</h1>
-          <p className="text-gray-600">
-            Gere relatórios personalizados e exporte para Excel
-          </p>
-        </div>
+    <main className="p-4 md:p-8 max-w-[1400px] mx-auto w-full">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-1">Relatórios</h1>
+        <p className="text-gray-500 text-sm">Gere relatórios personalizados e exporte para Excel</p>
+      </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Filtros */}
-          <Card className="md:col-span-1">
-            <CardHeader>
-              <CardTitle>Filtros</CardTitle>
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Painel de Filtros — fixo lateralmente em telas grandes */}
+        <div className="w-full lg:w-72 shrink-0">
+          <Card className="sticky top-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ListFilter className="h-4 w-4 text-gray-500" />
+                Filtros
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Tipo de Relatório</Label>
-                <Select value={tipo} onValueChange={setTipo}>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Tipo de Relatório</Label>
+                <Select value={tipo} onValueChange={(v) => { setTipo(v); setDados(null) }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -136,8 +160,8 @@ export default function RelatoriosPage() {
 
               {tipo === 'bens' && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Estado</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Estado</Label>
                     <Select value={estado} onValueChange={setEstado}>
                       <SelectTrigger>
                         <SelectValue />
@@ -151,8 +175,8 @@ export default function RelatoriosPage() {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Disponibilidade</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Disponibilidade</Label>
                     <Select value={disponivel} onValueChange={setDisponivel}>
                       <SelectTrigger>
                         <SelectValue />
@@ -169,14 +193,17 @@ export default function RelatoriosPage() {
 
               {tipo === 'emprestimos' && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Pastoral</Label>
-                    <Select value={idPastoral} onValueChange={setIdPastoral}>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Pastoral</Label>
+                    <Select
+                      value={idPastoral || 'todas'}
+                      onValueChange={(v) => setIdPastoral(v === 'todas' ? '' : v)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Todas" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todas</SelectItem>
+                        <SelectItem value="todas">Todas</SelectItem>
                         {pastorais.map((p) => (
                           <SelectItem key={p.id_pastoral} value={p.id_pastoral.toString()}>
                             {p.nome_pastoral}
@@ -186,36 +213,24 @@ export default function RelatoriosPage() {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Data Início</Label>
-                    <Input
-                      type="date"
-                      value={dataInicio}
-                      onChange={(e) => setDataInicio(e.target.value)}
-                    />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Data Início</Label>
+                    <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Data Fim</Label>
-                    <Input
-                      type="date"
-                      value={dataFim}
-                      onChange={(e) => setDataFim(e.target.value)}
-                    />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Data Fim</Label>
+                    <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
                   </div>
                 </>
               )}
 
-              <div className="space-y-2 pt-4">
+              <div className="space-y-2 pt-2 border-t">
                 <Button onClick={handleGerarRelatorio} disabled={isLoading} className="w-full">
                   {isLoading ? 'Gerando...' : 'Gerar Relatório'}
                 </Button>
                 {dados && (
-                  <Button
-                    onClick={handleExportarExcel}
-                    variant="outline"
-                    className="w-full"
-                  >
+                  <Button onClick={handleExportarExcel} variant="outline" className="w-full">
                     <FileSpreadsheet className="h-4 w-4 mr-2" />
                     Exportar Excel
                   </Button>
@@ -223,50 +238,148 @@ export default function RelatoriosPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Resultados */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Resultados</CardTitle>
+        {/* Área de Resultados */}
+        <div className="flex-1 min-w-0">
+          <Card className="h-full">
+            <CardHeader className="pb-3 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base">Resultados</CardTitle>
+                {dados && (
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                    <Badge variant="secondary" className="font-normal">
+                      {dados.total_registros} registro{dados.total_registros !== 1 ? 's' : ''}
+                    </Badge>
+                    <span className="text-xs">
+                      Gerado em {new Date(dados.data_geracao).toLocaleString('pt-BR')}
+                    </span>
+                  </div>
+                )}
+              </div>
             </CardHeader>
-            <CardContent>
+
+            <CardContent className="p-0">
               {!dados ? (
-                <div className="text-center py-12 text-gray-500">
-                  <FileDown className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>Selecione os filtros e clique em "Gerar Relatório"</p>
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                  <FileDown className="h-14 w-14 mb-4 text-gray-200" />
+                  <p className="text-sm font-medium">Nenhum relatório gerado</p>
+                  <p className="text-xs mt-1">Selecione os filtros e clique em "Gerar Relatório"</p>
+                </div>
+              ) : dados.dados.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                  <p className="text-sm font-medium">Nenhum registro encontrado</p>
+                  <p className="text-xs mt-1">Tente ajustar os filtros selecionados</p>
                 </div>
               ) : (
-                <div>
-                  <div className="mb-4 text-sm text-gray-600">
-                    <p>Total de registros: <strong>{dados.total_registros}</strong></p>
-                    <p>Gerado em: {new Date(dados.data_geracao).toLocaleString('pt-BR')}</p>
-                  </div>
-
-                  <div className="overflow-x-auto">
+                <>
+                  {/* Tabela com scroll interno */}
+                  <div className="overflow-auto max-h-[520px]">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          {dados.dados.length > 0 && Object.keys(dados.dados[0]).map((key) => (
-                            <TableHead key={key}>{key}</TableHead>
+                        <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                          {colunas.map((key) => (
+                            <TableHead
+                              key={key}
+                              className="sticky top-0 bg-gray-50/95 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap border-b z-10"
+                            >
+                              {key.replace(/_/g, ' ')}
+                            </TableHead>
                           ))}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {dados.dados.map((item: any, index: number) => (
-                          <TableRow key={index}>
+                        {dadosPaginados.map((item: any, index: number) => (
+                          <TableRow key={index} className="hover:bg-blue-50/40 transition-colors">
                             {Object.values(item).map((value: any, i: number) => (
-                              <TableCell key={i}>{value?.toString() || '-'}</TableCell>
+                              <TableCell key={i} className="text-sm whitespace-nowrap py-2.5">
+                                {value?.toString() || <span className="text-gray-300">—</span>}
+                              </TableCell>
                             ))}
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                </div>
+
+                  {/* Barra de paginação */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t bg-gray-50/50">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span>Exibindo</span>
+                      <Select
+                        value={itensPorPagina.toString()}
+                        onValueChange={(v) => { setItensPorPagina(Number(v)); setPaginaAtual(1) }}
+                      >
+                        <SelectTrigger className="h-7 w-16 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ITENS_POR_PAGINA_OPCOES.map((n) => (
+                            <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span>por página</span>
+                      <span className="text-gray-400">·</span>
+                      <span>
+                        {(paginaAtual - 1) * itensPorPagina + 1}–{Math.min(paginaAtual * itensPorPagina, dados.dados.length)} de {dados.dados.length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setPaginaAtual(1)}
+                        disabled={paginaAtual === 1}
+                        title="Primeira página"
+                      >
+                        <ChevronsLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+                        disabled={paginaAtual === 1}
+                        title="Página anterior"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </Button>
+
+                      <span className="px-3 text-sm text-gray-600 font-medium min-w-[80px] text-center">
+                        {paginaAtual} / {totalPaginas}
+                      </span>
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+                        disabled={paginaAtual === totalPaginas}
+                        title="Próxima página"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setPaginaAtual(totalPaginas)}
+                        disabled={paginaAtual === totalPaginas}
+                        title="Última página"
+                      >
+                        <ChevronsRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
         </div>
+      </div>
     </main>
   )
 }

@@ -1,47 +1,47 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { toast } from 'sonner'
-import { Church, Lock, Mail } from 'lucide-react'
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Church, Lock, Mail } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({ email: '', senha: '' })
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: "", senha: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn("credentials", {
         email: formData.email,
         senha: formData.senha,
         redirect: false,
-      })
+      });
 
       if (result?.error) {
-        toast.error('Erro ao fazer login', {
-          description: 'Email ou senha incorretos',
-        })
+        toast.error("Erro ao fazer login", {
+          description: "Email ou senha incorretos",
+        });
       } else {
-        toast.success('Login realizado com sucesso!')
-        router.push('/dashboard')
-        router.refresh()
+        toast.success("Login realizado com sucesso!");
+        router.push("/dashboard");
+        router.refresh();
       }
     } catch {
-      toast.error('Erro ao fazer login', {
-        description: 'Ocorreu um erro inesperado',
-      })
+      toast.error("Erro ao fazer login", {
+        description: "Ocorreu um erro inesperado",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -57,7 +57,7 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold text-white mb-3 leading-tight">
             Gestão Patrimonial
           </h1>
-          <p className="text-[#adc7f7] text-lg mb-6">Administração Diocesana</p>
+          <p className="text-[#adc7f7] text-lg mb-6">Administração Paroquial</p>
           <p className="text-[#86a0cd] text-sm leading-relaxed">
             Sistema integrado de gestão e controle do patrimônio paroquial.
           </p>
@@ -72,8 +72,10 @@ export default function LoginPage() {
             <div className="w-14 h-14 rounded-full bg-[#1a365d] flex items-center justify-center mb-3">
               <Church className="h-7 w-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-[#002045]">Gestão Patrimonial</h1>
-            <p className="text-[#74777f] text-sm">Administração Diocesana</p>
+            <h1 className="text-2xl font-bold text-[#002045]">
+              Gestão Patrimonial
+            </h1>
+            <p className="text-[#74777f] text-sm">Administração Paroquial</p>
           </div>
 
           {/* Card de login */}
@@ -102,7 +104,9 @@ export default function LoginPage() {
                     type="email"
                     placeholder="seu@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     required
                     disabled={isLoading}
                     className="pl-10 border-[#c4c6cf] focus-visible:ring-[#455f88] focus-visible:border-[#002045]"
@@ -124,7 +128,9 @@ export default function LoginPage() {
                     type="password"
                     placeholder="••••••••"
                     value={formData.senha}
-                    onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, senha: e.target.value })
+                    }
                     required
                     disabled={isLoading}
                     className="pl-10 border-[#c4c6cf] focus-visible:ring-[#455f88] focus-visible:border-[#002045]"
@@ -137,17 +143,17 @@ export default function LoginPage() {
                 className="w-full bg-[#002045] hover:bg-[#1a365d] text-white font-semibold mt-2 cursor-pointer"
                 disabled={isLoading}
               >
-                {isLoading ? 'Entrando...' : 'Entrar'}
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-xs text-[#74777f]">
-              <span className="font-mono">admin@paroquia.com</span> /{' '}
+              <span className="font-mono">admin@paroquia.com</span> /{" "}
               <span className="font-mono">admin123</span>
             </p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
