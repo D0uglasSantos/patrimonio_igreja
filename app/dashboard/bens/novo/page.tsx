@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -77,10 +76,7 @@ export default function NovoBemPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
+    <main className="p-4 md:p-8 max-w-[1280px] mx-auto w-full">
         <div className="mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm">
@@ -234,8 +230,7 @@ export default function NovoBemPage() {
             </form>
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </main>
   )
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import ExcelJS from 'exceljs'
 
 type EstadoBem = 'NOVO' | 'USADO' | 'QUEBRADO' | 'EM_MANUTENCAO'
@@ -27,11 +28,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Tipo de relatório não especificado' }, { status: 400 })
     }
 
-    let dados: any[] = []
+    let dados: Record<string, unknown>[] = []
 
     // Relatório de Bens
     if (tipo === 'bens') {
-      const where: any = {}
+      const where: Prisma.BemWhereInput = {}
 
       if (estado) {
         where.estado = estado
@@ -64,15 +65,19 @@ export async function GET(req: NextRequest) {
         id_bem: bem.id_bem,
         nome_bem: bem.nome_bem,
         codigo: bem.codigo,
+        marca: bem.marca || 'N/A',
+        modelo: bem.modelo || 'N/A',
+        local: bem.local,
         estado: bem.estado,
         valor: bem.valor?.toString() || 'N/A',
+        foto: bem.foto || 'N/A',
         disponivel: bem.emprestimos.length === 0 ? 'Sim' : 'Não',
       }))
     }
 
     // Relatório de Empréstimos
     else if (tipo === 'emprestimos') {
-      const where: any = {}
+      const where: Prisma.RetiradaEmprestimoWhereInput = {}
 
       if (id_pastoral) {
         where.id_pastoral = parseInt(id_pastoral)
