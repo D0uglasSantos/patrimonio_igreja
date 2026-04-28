@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Fragment } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -70,22 +69,19 @@ export default function BemDetalhesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <p>Carregando...</p>
-        </main>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-[#002045] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-[#74777f]">Carregando...</p>
+        </div>
       </div>
     )
   }
 
   if (!bem) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <p>Bem não encontrado</p>
-        </main>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-sm text-[#74777f]">Bem não encontrado</p>
       </div>
     )
   }
@@ -103,30 +99,28 @@ export default function BemDetalhesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex justify-between items-center">
+    <>
+    <main className="p-4 md:p-8 max-w-[1280px] mx-auto w-full">
+        <div className="mb-6 flex flex-wrap justify-between items-center gap-2">
           <Link href="/dashboard/bens">
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar para a Lista de Bens
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              <span className="hidden xs:inline">Voltar para a </span>Lista de Bens
             </Button>
           </Link>
           {session?.user.tipo_user === 'ADM' && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <Button size="sm" onClick={() => router.push(`/dashboard/bens/${bem.id_bem}/editar`)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
+                <Edit className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Editar</span>
               </Button>
               <Button 
                 size="sm" 
                 variant="destructive" 
                 onClick={() => setIsDeleteDialogOpen(true)}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir
+                <Trash2 className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Excluir</span>
               </Button>
             </div>
           )}
@@ -172,32 +166,32 @@ export default function BemDetalhesPage() {
               <div className="space-y-4 pt-4 border-t">
                 <h3 className="text-lg font-semibold">Histórico de Empréstimos</h3>
                 {bem.emprestimos && bem.emprestimos.length > 0 ? (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
                     <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                             Retirante
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
                             Pastoral
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Data Retirada
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            Retirada
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status Retirada
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">
+                            Est. Ret.
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">
                             Entregue por
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Data Devolução
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            Devolução
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status Devolução
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
+                            Est. Dev.
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">
                             Recebido por
                           </th>
                         </tr>
@@ -206,23 +200,23 @@ export default function BemDetalhesPage() {
                         {bem.emprestimos.map((emp: any) => (
                           <Fragment key={emp.id}>
                             <tr className="hover:bg-gray-50 transition-colors">
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-3">
                                 <div>
-                                  <p className="text-sm font-medium text-gray-900">{emp.retirante.nome}</p>
-                                  <p className="text-xs text-gray-500">{emp.email_retirante}</p>
+                                  <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{emp.retirante.nome}</p>
+                                  <p className="text-xs text-gray-500 hidden sm:block">{emp.email_retirante}</p>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
+                              <td className="px-3 py-3 text-sm text-gray-900 hidden sm:table-cell whitespace-nowrap">
                                 {emp.pastoral.nome_pastoral}
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
+                              <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
                                 {new Date(emp.data_retirada).toLocaleDateString('pt-BR', {
                                   day: '2-digit',
                                   month: '2-digit',
-                                  year: 'numeric'
+                                  year: '2-digit'
                                 })}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-3 hidden md:table-cell">
                                 <Badge 
                                   variant="outline" 
                                   className={
@@ -235,13 +229,10 @@ export default function BemDetalhesPage() {
                                   {emp.estado_retirada}
                                 </Badge>
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
+                              <td className="px-3 py-3 text-sm text-gray-900 hidden lg:table-cell">
                                 {emp.nome_responsavel_devolucao ? (
                                   <div>
-                                    <p className="font-medium">{emp.nome_responsavel_devolucao}</p>
-                                    {emp.email_responsavel_devolucao && (
-                                      <p className="text-xs text-gray-500">{emp.email_responsavel_devolucao}</p>
-                                    )}
+                                    <p className="font-medium whitespace-nowrap">{emp.nome_responsavel_devolucao}</p>
                                   </div>
                                 ) : emp.entregador ? (
                                   emp.entregador.nome
@@ -249,22 +240,22 @@ export default function BemDetalhesPage() {
                                   '-'
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-sm">
+                              <td className="px-3 py-3 text-sm whitespace-nowrap">
                                 {emp.data_entrega ? (
                                   <span className="text-gray-900">
                                     {new Date(emp.data_entrega).toLocaleDateString('pt-BR', {
                                       day: '2-digit',
                                       month: '2-digit',
-                                      year: 'numeric'
+                                      year: '2-digit'
                                     })}
                                   </span>
                                 ) : (
-                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 whitespace-nowrap">
                                     Em uso
                                   </Badge>
                                 )}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-3 hidden sm:table-cell">
                                 {emp.estado_devolucao ? (
                                   <Badge 
                                     variant="outline" 
@@ -281,7 +272,7 @@ export default function BemDetalhesPage() {
                                   <span className="text-xs text-gray-400">-</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
+                              <td className="px-3 py-3 text-sm text-gray-900 hidden lg:table-cell whitespace-nowrap">
                                 {emp.recebedor ? emp.recebedor.nome : '-'}
                               </td>
                             </tr>
@@ -289,7 +280,7 @@ export default function BemDetalhesPage() {
                             {/* Linha expandida com detalhes adicionais */}
                             {(emp.descricao_motivo_retirada || (emp.estado_devolucao === 'QUEBRADO' && emp.justificativa_avaria)) && (
                               <tr className="bg-gray-50">
-                                <td colSpan={8} className="px-4 py-3">
+                                <td colSpan={8} className="px-3 py-3">
                                   <div className="space-y-2 text-sm">
                                     {emp.descricao_motivo_retirada && (
                                       <div>
@@ -319,7 +310,7 @@ export default function BemDetalhesPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
+    </main>
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -351,11 +342,11 @@ export default function BemDetalhesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm font-medium text-gray-500">{children}</p>
+  return <p className="text-sm font-medium text-[#74777f]">{children}</p>
 }
 

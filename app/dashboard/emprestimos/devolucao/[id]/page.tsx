@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -168,20 +167,17 @@ export default function DevolucaoBemPage() {
 
   if (!emprestimo) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <p>Carregando...</p>
-        </main>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-[#002045] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-[#74777f]">Carregando...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
+    <main className="p-4 md:p-8 max-w-[1280px] mx-auto w-full">
         <div className="mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm">
@@ -347,8 +343,7 @@ export default function DevolucaoBemPage() {
             </form>
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </main>
   )
 }
 

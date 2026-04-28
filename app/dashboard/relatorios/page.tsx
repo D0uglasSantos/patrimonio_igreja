@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -106,10 +105,7 @@ export default function RelatoriosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
+    <main className="p-4 md:p-8 max-w-[1280px] mx-auto w-full">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Relatórios</h1>
           <p className="text-gray-600">
@@ -271,8 +267,7 @@ export default function RelatoriosPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+    </main>
   )
 }
 
